@@ -1,5 +1,8 @@
 [
-  { "title": "Yasomati Nandana", "artist": "Srila Prabhupada", "src": "songs/yasomati nandana.mp3", "cover": "" },
-  { "title": "Prayers to the Six Gosvamis", "artist": "Srila Prabhupada", "src": "songs/Prayers_to_the_Six_Gosvamis.mp3", "cover": "" }
-  
+  { "title": "My Song", "artist": "Me", "src": "songs/Yasomati Nandana.mp3", "cover": "" },
+  { "title": "Another Song", "artist": "Me", "src": "songs/song2.mp3", "cover": "" },
+  { "title": "Jaya Radha Madhav", "artist": "Srila Prabhupada", "src": "songs/jaya radha madhav.mp3", "cover": "" },
+  { "title": "Sri Sri Gurvastakam", "artist": "Srila Prabhupada", "src": "songs/sri sri gurvastakam.mp3", "cover": "" },
+  { "title": "Hare Krsna Mahamantra", "artist": "Srila Prabhupada", "src": "songs/hare krsna.mp3", "cover": "" },
+  //{ "title": "", "artist": "Srila Prabhupada", "src": "songs/.mp3", "cover": "" }
 ]
