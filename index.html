@@ -122,19 +122,39 @@
     async function tryLoadSongsJSON(){
       try{
         const resp = await fetch('songs.json', {cache: 'no-store'});
-        if(!resp.ok) return; // no songs.json present
+        if(!resp.ok){ console.info('songs.json not found (http ' + resp.status + ')'); return false; } // no songs.json present
         const data = await resp.json();
-        if(Array.isArray(data) && data.length>0){
-          // basic validation: ensure each item has src
-          const valid = data.filter(d=>d && d.src).map(d=>({
-            title: d.title || d.src.split('/').pop(),
+        if(!Array.isArray(data) || data.length===0){ console.info('songs.json is empty or invalid array'); return false; }
+
+        // Resolve src paths: prefer relative paths (recommended) but automatically
+        // convert them into absolute URLs based on the current location. This helps when
+        // songs.json uses 'songs/track.mp3' (relative). Full http(s) URLs are left intact.
+        const baseForResolve = (function(){
+          try{
+            let p = location.pathname || '/';
+            if(p.endsWith('index.html')) p = p.replace(/index.html$/, '');
+            if(!p.endsWith('/')) p += '/';
+            return location.origin + p;
+          }catch(e){ return location.origin + '/'; }
+        })();
+
+        const valid = data.filter(d=>d && d.src).map(d=>{
+          let src = d.src;
+          if(!/^https?:\/\//i.test(src)){
+            try{ src = new URL(src, baseForResolve).href; }catch(e){ /* leave as-is */ }
+          }
+          return {
+            title: d.title || (d.src && d.src.split('/').pop()),
             artist: d.artist || 'Unknown',
-            src: d.src,
+            src: src,
             cover: d.cover || ''
-          }));
-          if(valid.length>0){ tracks = valid; console.info('Loaded playlist from songs.json'); }
-        }
-      }catch(e){ console.info('No songs.json or failed to load it:', e); }
+          };
+        });
+
+        if(valid.length>0){ tracks = valid; console.info('Loaded playlist from songs.json', tracks); return true; }
+        console.info('No valid entries in songs.json');
+        return false;
+      }catch(e){ console.info('No songs.json or failed to load it:', e); return false; }
     }
 
     // DOM refs
@@ -253,9 +273,12 @@
 
     // initial setup: try loading songs.json first, then build playlist from whichever tracks are available
     (async()=>{
-      await tryLoadSongsJSON();
+      const loadedFromJSON = await tryLoadSongsJSON();
       buildPlaylist();
       loadTrack(index);
+      // show short status in the Mode area so you can tell whether songs.json was used (non-invasive)
+      try{ if(loadedFromJSON){ mode.textContent = 'Loaded songs.json'; } else { mode.textContent = 'Using default playlist'; } setTimeout(()=>{ mode.textContent = '—'; }, 3000);}catch(e){}
+    )
     })();
 
     // drag & drop local files (optional)
@@ -275,7 +298,11 @@
       console.warn('Audio error', ev); if(audio.src) title.textContent = 'Failed to load — check CORS or URL';
     });
   </script>
+<!-- Save this file as `index.html` in your repo root.
+     When you push the repo and enable GitHub Pages, the player will load automatically at:
+     https://yourname.github.io/your-repo/
+     (No UI changes were made.) -->
+
 
 </body>
 </html>
-
