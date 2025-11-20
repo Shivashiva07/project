@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Online Music Player</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#93a4b8; --accent:#7c3aed;
+      --glass: rgba(255,255,255,0.03);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;color:#e6eef8;background:linear-gradient(180deg,#071024 0%, #0f1724 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+
+    .player{width:100%;max-width:920px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 8px 30px rgba(2,6,23,0.6);display:grid;grid-template-columns:1fr 320px;gap:18px}
+
+    .left{padding:10px}
+    .cover{width:100%;aspect-ratio:1/1;border-radius:12px;overflow:hidden;background:linear-gradient(135deg,var(--accent),#1e3a8a);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:24px}
+
+    .meta{margin-top:12px;display:flex;align-items:center;gap:14px}
+    .meta .info{flex:1}
+    h1{margin:0;font-size:20px}
+    p.artist{margin:4px 0 0;color:var(--muted);font-size:13px}
+
+    .controls{margin-top:14px;display:flex;align-items:center;gap:12px}
+    button.icon{background:var(--glass);border:0;padding:10px;border-radius:10px;color:#eaf2ff;cursor:pointer;font-size:16px}
+    button.icon:active{transform:translateY(1px)}
+
+    .big{font-size:20px;padding:14px}
+    .play{background:linear-gradient(90deg,var(--accent),#2563eb);box-shadow:0 6px 18px rgba(124,58,237,0.25)}
+
+    .progress-wrap{margin-top:14px}
+    .progress{width:100%;height:8px;background:rgba(255,255,255,0.06);border-radius:99px;position:relative;cursor:pointer}
+    .progress .bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#60a5fa);border-radius:99px}
+    .time{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin-top:6px}
+
+    .right{padding:10px;border-left:1px dashed rgba(255,255,255,0.03)}
+    .playlist{max-height:440px;overflow:auto;padding-right:6px}
+    .track{display:flex;gap:10px;align-items:center;padding:10px;border-radius:10px;margin-bottom:8px;cursor:pointer;background:transparent}
+    .track:hover{background:rgba(255,255,255,0.02)}
+    .track.active{background:linear-gradient(90deg,rgba(124,58,237,0.12),rgba(37,99,235,0.06));border:1px solid rgba(124,58,237,0.12)}
+    .thumb{width:54px;height:54px;border-radius:8px;overflow:hidden;flex-shrink:0;background:#0b1220;display:flex;align-items:center;justify-content:center}
+    .track .tinfo{flex:1}
+    .t-title{font-size:14px;margin:0}
+    .t-sub{font-size:12px;color:var(--muted);margin-top:4px}
+
+    .footer-controls{margin-top:12px;display:flex;align-items:center;gap:10px;justify-content:space-between}
+    .left-controls{display:flex;gap:8px;align-items:center}
+    input[type=range]{-webkit-appearance:none;background:transparent;width:120px}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,0.4)}
+    .small{font-size:12px;color:var(--muted)}
+
+    /* responsive */
+    @media (max-width:880px){.player{grid-template-columns:1fr;max-width:680px}.right{border-left:0;border-top:1px dashed rgba(255,255,255,0.03);padding-top:16px}}
+  </style>
+</head>
+<body>
+  <div class="player" id="player">
+    <div class="left">
+      <div class="cover" id="cover">🎵</div>
+      <div class="meta">
+        <div class="info">
+          <h1 id="title">Title</h1>
+          <p class="artist" id="artist">Artist</p>
+        </div>
+        <div style="text-align:right">
+          <div class="small">Mode</div>
+          <div id="mode" class="small">—</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="icon" id="prev" title="Previous">⏮</button>
+        <button class="icon big play" id="play" title="Play/Pause">▶</button>
+        <button class="icon" id="next" title="Next">⏭</button>
+
+        <div style="flex:1"></div>
+
+        <button class="icon" id="shuffle" title="Shuffle">🔀</button>
+        <button class="icon" id="repeat" title="Repeat">🔁</button>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress" id="progress">
+          <div class="bar" id="bar"></div>
+        </div>
+        <div class="time"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+      </div>
+
+      <div class="footer-controls">
+        <div class="left-controls">
+          <div class="small">Volume</div>
+          <input id="vol" type="range" min="0" max="1" step="0.01" value="0.9">
+          <button class="icon" id="mute" title="Mute">🔊</button>
+        </div>
+        <div class="small">Keyboard: Space ▶/▮, ←/→ seek, Up/Down vol</div>
+      </div>
+    </div>
+
+    <div class="right">
+      <h3 style="margin:6px 0 12px">Playlist</h3>
+      <div class="playlist" id="playlist"></div>
+    </div>
+  </div>
+
+  <audio id="audio"></audio>
+
+  <script>
+    // Simple playlist. Replace 'src' with your URLs (CORS enabled) or local files when testing.
+    const tracks = [
+      {title: 'My Song', artist: 'Me', src: 'https://Shivashiva07.github.io/music-player/kirtans/Yasomati Nandana.mp3', cover: '' }
+      {title: 'SoundHelix Song 3', artist:'SoundHelix', src:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', cover:''},
+      {title: 'SoundHelix Song 6', artist:'SoundHelix', src:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3', cover:''}
+    ];
+
+    // DOM refs
+    const audio = document.getElementById('audio');
+    const title = document.getElementById('title');
+    const artist = document.getElementById('artist');
+    const cover = document.getElementById('cover');
+    const playBtn = document.getElementById('play');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const bar = document.getElementById('bar');
+    const progress = document.getElementById('progress');
+    const cur = document.getElementById('cur');
+    const dur = document.getElementById('dur');
+    const playlistEl = document.getElementById('playlist');
+    const vol = document.getElementById('vol');
+    const muteBtn = document.getElementById('mute');
+    const shuffleBtn = document.getElementById('shuffle');
+    const repeatBtn = document.getElementById('repeat');
+    const mode = document.getElementById('mode');
+
+    let index = 0;
+    let isPlaying = false;
+    let isShuffle = false;
+    let repeatMode = 'off'; // off, one, all
+    let lastVolume = vol.value;
+
+    function loadTrack(i){
+      const t = tracks[i];
+      audio.src = t.src;
+      title.textContent = t.title;
+      artist.textContent = t.artist;
+      cover.textContent = t.cover? '': '🎵';
+      updateActiveTrack();
+    }
+
+    function playPause(){
+      if(!audio.src) loadTrack(index);
+      if(audio.paused){audio.play().catch(e=>console.warn(e));isPlaying=true;playBtn.textContent='▮';}
+      else{audio.pause();isPlaying=false;playBtn.textContent='▶'}
+    }
+
+    function nextTrack(){
+      if(isShuffle){ index = Math.floor(Math.random()*tracks.length); }
+      else{ index = (index+1) % tracks.length; }
+      loadTrack(index);
+      audio.play(); isPlaying=true; playBtn.textContent='▮';
+    }
+    function prevTrack(){
+      if(audio.currentTime>3){ audio.currentTime = 0; }
+      else{
+        index = (index-1+tracks.length)%tracks.length; loadTrack(index); audio.play(); isPlaying=true; playBtn.textContent='▮';
+      }
+    }
+
+    // build playlist UI
+    function buildPlaylist(){
+      playlistEl.innerHTML = '';
+      tracks.forEach((t,i)=>{
+        const el = document.createElement('div'); el.className='track'; el.dataset.i=i;
+        el.innerHTML = `<div class='thumb'>${t.cover?'<img src="'+t.cover+'" alt="cover" style="width:100%;height:100%;object-fit:cover">':'🎧'}</div>
+                        <div class='tinfo'><div class='t-title'>${t.title}</div><div class='t-sub'>${t.artist}</div></div>`;
+        el.addEventListener('click',()=>{index=i;loadTrack(i);audio.play();isPlaying=true;playBtn.textContent='▮';});
+        playlistEl.appendChild(el);
+      });
+      updateActiveTrack();
+    }
+
+    function updateActiveTrack(){
+      document.querySelectorAll('.track').forEach(el=>el.classList.remove('active'));
+      const el = document.querySelector(`.track[data-i="${index}"]`);
+      if(el) el.classList.add('active');
+    }
+
+    // time formatting
+    function fmt(s){
+      if(!isFinite(s)) return '0:00';
+      const m = Math.floor(s/60); const sec = Math.floor(s%60).toString().padStart(2,'0'); return `${m}:${sec}`;
+    }
+
+    // events
+    audio.addEventListener('timeupdate', ()=>{
+      const p = audio.currentTime / (audio.duration || 1) * 100; bar.style.width = p + '%'; cur.textContent = fmt(audio.currentTime); dur.textContent = fmt(audio.duration);
+    });
+
+    audio.addEventListener('ended', ()=>{
+      if(repeatMode==='one'){ audio.currentTime=0; audio.play(); }
+      else if(isShuffle){ nextTrack(); }
+      else if(index < tracks.length-1){ nextTrack(); }
+      else if(repeatMode==='all'){ index = 0; loadTrack(index); audio.play(); }
+      else{ isPlaying=false; playBtn.textContent='▶'; }
+    });
+
+    progress.addEventListener('click',(e)=>{
+      const rect = progress.getBoundingClientRect(); const x = e.clientX - rect.left; const p = x / rect.width; audio.currentTime = p * audio.duration;
+    });
+
+    playBtn.addEventListener('click', playPause);
+    prevBtn.addEventListener('click', prevTrack);
+    nextBtn.addEventListener('click', nextTrack);
+
+    vol.addEventListener('input', ()=>{ audio.volume = vol.value; lastVolume = vol.value; muteBtn.textContent = audio.volume>0?'🔊':'🔈'; });
+    muteBtn.addEventListener('click', ()=>{ if(audio.volume>0){ lastVolume = audio.volume; audio.volume=0; vol.value=0; muteBtn.textContent='🔈'; } else { audio.volume=lastVolume; vol.value=lastVolume; muteBtn.textContent='🔊'; }});
+
+    shuffleBtn.addEventListener('click', ()=>{ isShuffle = !isShuffle; shuffleBtn.style.opacity = isShuffle?1:0.7; mode.textContent = isShuffle? 'Shuffle' : (repeatMode==='off'?'—':repeatMode==='one'?'Repeat One':'Repeat All'); });
+    repeatBtn.addEventListener('click', ()=>{ if(repeatMode==='off') repeatMode='one'; else if(repeatMode==='one') repeatMode='all'; else repeatMode='off'; repeatBtn.style.opacity = repeatMode==='off'?0.7:1; mode.textContent = repeatMode==='off'?'—': repeatMode==='one'?'Repeat One':'Repeat All'; });
+
+    // keyboard shortcuts
+    document.addEventListener('keydown',(e)=>{
+      if(e.code==='Space'){ e.preventDefault(); playPause(); }
+      else if(e.code==='ArrowRight'){ audio.currentTime = Math.min(audio.duration || 0, audio.currentTime + 5); }
+      else if(e.code==='ArrowLeft'){ audio.currentTime = Math.max(0, audio.currentTime - 5); }
+      else if(e.code==='ArrowUp'){ audio.volume = Math.min(1, audio.volume + 0.05); vol.value = audio.volume; }
+      else if(e.code==='ArrowDown'){ audio.volume = Math.max(0, audio.volume - 0.05); vol.value = audio.volume; }
+    });
+
+    // initial setup
+    buildPlaylist(); loadTrack(index);
+
+    // drag & drop local files (optional)
+    document.body.addEventListener('dragover', (e)=>{ e.preventDefault(); document.body.style.opacity=0.98; });
+    document.body.addEventListener('dragleave', (e)=>{ document.body.style.opacity=1; });
+    document.body.addEventListener('drop', (e)=>{
+      e.preventDefault(); document.body.style.opacity=1;
+      const f = e.dataTransfer.files[0];
+      if(!f) return;
+      const url = URL.createObjectURL(f);
+      tracks.push({title:f.name, artist:'Local file', src:url, cover:''});
+      buildPlaylist(); index = tracks.length-1; loadTrack(index); audio.play();
+    });
+
+    // helpful: show CORS note when remote audio fails to load
+    audio.addEventListener('error', (ev)=>{
+      console.warn('Audio error', ev); if(audio.src) title.textContent = 'Failed to load — check CORS or URL';
+    });
+  </script>
+<!-- Save this file as `index.html` in your repo root.
+     When you push the repo and enable GitHub Pages, the player will load automatically at:
+     https://yourname.github.io/your-repo/
+     (No UI changes were made.) -->
+
+
+</body>
+</html>
